@@ -1,0 +1,36 @@
+{
+  "name": "com.chobitech.unity.demo-kit",
+  "version": "1.0.0",
+  "displayName": "Chobitech.DemoKit",
+  "description": "A lightweight, high-performance Unity package designed to help you create professional demonstration environments for your projects and assets with minimal effort.",
+  "unity": "2022.3",
+  "author": {
+    "name": "chobitech",
+    "email": "chobitech.g@gmail.com",
+    "url": "https://chobitech.com"
+  },
+  "category": "Tools",
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6"
+  },
+  "keywords": [
+    "demo",
+    "toolkit",
+    "async",
+    "coroutine",
+    "chobitech",
+    "sample",
+    "logger",
+    "workflow",
+    "showcase",
+    "GUI",
+    "framework"
+  ],
+  "samples": [
+    {
+      "displayName": "Chobitech.DemoKit Basic Samples",
+      "description": "Example scenes and scripts showing how to use DemoBase and the log system.",
+      "path": "Samples~"
+    }
+  ]
+}

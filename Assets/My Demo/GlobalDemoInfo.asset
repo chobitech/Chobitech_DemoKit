@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 345b85175c0fb3342965aee79f41ee51, type: 3}
+  m_Name: GlobalDemoInfo
+  m_EditorClassIdentifier: 
+  title: My Demo
+  icon: {fileID: 0}
+  globalDescription: "The sample demo of <b>Chobitech.DemoKit</b>.\nIn this demo,
+    the two individual demos exist:\n - [notice]AsyncDemoBase[/notice] based demo\n
+    - [warning]CoroutineDemoBase[/warning] based demo."
+  customColorTags:
+  - {fileID: 11400000, guid: 7dca9c7f9edcd69418cd5f41bf6610f5, type: 2}
+  - {fileID: 11400000, guid: bc4bd204fa4a9824caaecf7516f11767, type: 2}
+  - {fileID: 11400000, guid: 1ac5878a5aa76634eac06a89d582aa04, type: 2}

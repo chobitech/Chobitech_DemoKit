@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 53
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6917d4d7a6cb1f4c952f8da1078849f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  firstStartupFinished: 1
+  doNotAskToAddEventSystemSceneGuids:
+  - fe11571aec838f34d895b73fb2e9b6ef
+  - f40c03cfce90d724bb6d879abc8572c1
+  expandableStateMap:
+    entryList:
+    - key: openDemoSceneExplainExpandState
+      value: 0
+    - key: noticeAfterPreparingExpandState
+      value: 1
+    - key: implementYourDemoExplainExpandState
+      value: 0

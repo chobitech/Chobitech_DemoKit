@@ -1,0 +1,67 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../",
+          "files": [
+            "Chobitech.DemoKit.Internal.csproj"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**",
+          "_*.md",
+          "_*.yml",
+          "obj/**"
+        ]
+      },
+      {
+        "files": ["images/**"],
+        "exclude": ["**/"]
+      },
+      {
+        "files": ["LICENSE.md", "CHANGELOG.md"],
+        "src": "../Assets/Chobitech/DemoKit/"
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**",
+          ".nojekyll"
+        ],
+        "exclude": [
+          "**/*.psd"
+        ]
+      },
+      {
+        "files": ["LICENSE.md", "CHANGELOG.md"],
+        "src": "../Assets/Chobitech/DemoKit/"
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appName": "Chobitech.DemoKit",
+      "_appTitle": "Chobitech.DemoKit",
+      "_enableSearch": true,
+      "_disableContribution": true,
+      "_appFooter": "<span>Copyright © 2026 <a href=\"https://chobitech.com/\" target=\"_blank\" rel=\"noopener\">chobitech</a></span>",
+      "pdf": false
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "com.chobitech.unity.demo-kit.internal",
+  "version": "1.0.0",
+  "displayName": "Chobitech.DemoKit.Internal",
+  "description": "The scripts and assets for internal process of Chobitech.DemoKit",
+  "unity": "2022.3",
+  "author": {
+    "name": "chobitech",
+    "email": "chobitech.g@gmail.com",
+    "url": "https://chobitech.com"
+  },
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6"
+  }
+}

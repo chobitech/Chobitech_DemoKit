@@ -1,0 +1,16 @@
+{
+    "name": "Chobitech.DemoKit.Editor",
+    "rootNamespace": "Chobitech.DemoKit.Editor",
+    "references": [
+        "GUID:51cab77b721d54d4bb8819c5995db3a7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

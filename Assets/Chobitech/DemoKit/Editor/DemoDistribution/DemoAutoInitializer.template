@@ -1,0 +1,598 @@
+#if UNITY_EDITOR
+// Copyright (c) 2026 chobitech
+// Released under the MIT license
+// https://opensource.org/licenses/mit-license.php
+
+
+//-----
+// [CAUTION]
+// Do not edit the content of this file, as it may prevent the demo from functioning correctly.
+//-----
+
+
+using UnityEngine;
+using UnityEditor;
+using System.Runtime.CompilerServices;
+using System.IO;
+using System;
+using System.Linq;
+using System.IO.Compression;
+using System.Text;
+using UnityEngine.Events;
+using UnityEditor.SceneManagement;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+
+
+[InitializeOnLoad]
+public class ##CLS_NAME## : EditorWindow
+{
+    private const string demoName = "##DEMO_NAME##";
+    private const string zipArchiveFileName = "##ZIP_FILE_NAME##";
+    private const string unityPackageFileName = "##UNITY_PACKAGE_FILE_NAME##";
+
+    private const string checkClassName = "##CHECK_CLASS_NAME##";
+
+    private const string selfFileName = "##CLS_NAME##.cs";
+
+    private const string editorCheckGuid = "##EDITOR_CHECK_GUID##";
+    private const string importCheckGuid = "##IMPORT_CHECK_GUID##";
+
+    private const string demoSceneFileName = "##DEMO_SCENE_FILE_NAME##";
+
+    private const string WindowName = demoName + " Initializer";
+
+    private const string WindowMenuPath = "Window/Chobitech DemoKit/" + WindowName;
+
+    private const string DemoKitName = "##DEMO_KIT_NAME##";
+    private const string CTWebsiteUrl = "##CT_SITE_URL##";
+    private const string CTGitHubUrl = "##CT_GITHUB_URL##";
+    private const string CTAssetStoreUrl = "##CT_ASSET_STORE_URL##";
+
+    [MenuItem(WindowMenuPath, priority = int.MaxValue)]
+    public static void ShowWindow()
+    {
+        var inspectorType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+
+        var window = GetWindow<##CLS_NAME##>(
+            WindowName,
+            false,
+            inspectorType
+        );
+
+        window.Show(true);
+        window.Focus();
+    }
+
+
+    #region Initialize Codes
+    static ##CLS_NAME##()
+    {
+        EditorApplication.delayCall -= DelayCall;
+        EditorApplication.delayCall += DelayCall;
+    }
+
+
+    private static void DelayCall()
+    {
+        EditorApplication.delayCall -= DelayCall;
+
+        if (!AutoInitializerSettings.instance.isFirstStartupFinished)
+        {
+            ShowWindow();
+            AutoInitializerSettings.instance.isFirstStartupFinished = true;
+            AutoInitializerSettings.instance.Save();
+        }
+    }
+
+
+    [FilePath("ProjectSettings/DemoKitInitializerSettings.asset", FilePathAttribute.Location.ProjectFolder)]
+    private class AutoInitializerSettings : ScriptableSingleton<AutoInitializerSettings>
+    {
+        public bool isFirstStartupFinished = false;
+        public void Save() => Save(true);
+    }
+
+    
+
+    private static string CombinePath(params string[] path)
+    {
+        return Path.Combine(path).Replace("\\", "/");
+    }
+
+    private static string GetCurrentFolderFullPath([CallerFilePath] string srcFilePath = "")
+    {
+        return Path.GetDirectoryName(srcFilePath).Replace("\\", "/");
+    }
+
+
+    private static readonly Lazy<string> _lazySelfFullPath = new(() => GetCurrentFolderFullPath());
+    private static string SelfFullPath => _lazySelfFullPath.Value;
+
+    private static readonly Lazy<string> _lazySelfRelativePath = new(() => FileUtil.GetProjectRelativePath(SelfFullPath));
+    private static string SelfRelativePath => _lazySelfRelativePath.Value;
+
+
+    private static void DeleteFile(string fileName)
+    {
+        if(AssetDatabase.DeleteAsset(CombinePath(SelfRelativePath, fileName)))
+        {
+            AssetDatabase.Refresh();
+            Debug.Log($"{fileName} is deleted.");
+        }
+    }
+
+    private static bool IsPackageAlreadyImported => AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .Any(t => t.FullName == checkClassName);
+    
+    private static bool IsUnityPackageFileExists
+    {
+        get
+        {
+            var packagePath = CombinePath(SelfFullPath, unityPackageFileName);
+            return File.Exists(packagePath);
+        }
+    }
+
+
+    private static readonly Lazy<string> _lazyZipFilePath = new(() => CombinePath(SelfFullPath, zipArchiveFileName));
+    private static string ZipFilePath => _lazyZipFilePath.Value;
+
+    private static bool IsZipFileExists => File.Exists(ZipFilePath);
+
+    private static bool ImportInternalCodePackage()
+    {        
+        if (IsPackageAlreadyImported)
+        {
+            OnInternalPackageImportCompleted();
+            return false;
+        }
+        else
+        {
+            if (!IsUnityPackageFileExists)
+            {
+                Debug.LogError($"{unityPackageFileName} is not found.");
+                return false;
+            }
+
+            try
+            {
+                Debug.Log($"Importing {unityPackageFileName}...");
+                AssetDatabase.ImportPackage(CombinePath(SelfFullPath, unityPackageFileName), false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+    }
+
+
+    private static void OnInternalPackageImportCompleted()
+    {
+        if (!UnzipAssets())
+        {
+            Debug.LogError($"Unzipping demo assets failed. Please try again or unzip manually.");
+            return;
+        }
+
+        if (!EditMainScene())
+        {
+            Debug.Log($"Adding EventSystem object to the scene '{demoSceneFileName}'. Please add EventSystem to the scene manually.");
+            return;
+        }
+
+        OnInitializedCompleted();
+    }
+
+    private static bool AddEventSystem(Scene scene)
+    {
+        var exists = scene.GetRootGameObjects()
+            .Any(obj => obj.GetComponentInChildren<EventSystem>(true) != null);
+        
+        if (exists)
+        {
+            return true;
+        }
+
+        try
+        {
+            var go = new GameObject("EventSystem");
+            SceneManager.MoveGameObjectToScene(go, scene);
+
+            var es = go.AddComponent<EventSystem>();
+
+            var inputSystemType = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+
+            if (inputSystemType != null)
+            {
+                go.AddComponent(inputSystemType);
+            }
+            else
+            {
+                go.AddComponent<StandaloneInputModule>();
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            return false;
+        }
+    }
+
+    private static bool EditMainScene()
+    {
+        var scenePath = CombinePath(SelfRelativePath, demoSceneFileName);
+        var sType = AssetDatabase.GetMainAssetTypeAtPath(scenePath);
+        if (sType != typeof(SceneAsset))
+        {
+            return false;
+        }
+
+        var scene = EditorSceneManager.GetSceneByPath(scenePath);
+        var isSceneOpened = scene.IsValid();
+
+        if (!isSceneOpened)
+        {
+            scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+        }
+
+        try
+        {
+            var addEs = AddEventSystem(scene);
+            if(addEs)
+            {
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+            }
+            return addEs;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogException(ex);
+            return false;
+        }
+        finally
+        {
+            if (!isSceneOpened)
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+    }
+
+    private static bool UnzipAssets()
+    {
+        if (!IsZipFileExists)
+        {
+            return true;
+        }
+
+        Debug.Log($"Starting {demoName} assets extracting...");
+
+        try
+        {
+            AssetDatabase.StartAssetEditing();
+
+            ZipFile.ExtractToDirectory(ZipFilePath, SelfFullPath, true);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            return false;
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.Refresh();
+            AssetDatabase.SaveAssets();
+        }
+    }
+
+    private static void InitializeProcess()
+    {
+        if (!string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(editorCheckGuid)))
+        {
+            var isImport = EditorUtility.DisplayDialog(
+                "Confirmation",
+                $"Development environment detected for {demoName}. Are you sure you want to run the initialization? This may overwrite or delete your current working files.",
+                "Yes",
+                "No"
+            );
+            if (!isImport)
+            {
+                return;
+            }
+        }
+
+        ImportInternalCodePackage();
+    }
+
+    private static void OnInitializedCompleted()
+    {
+        try
+        {
+            AssetDatabase.StartAssetEditing();
+
+            DeleteFile(unityPackageFileName);
+            DeleteFile(zipArchiveFileName);
+            DeleteFile(selfFileName);
+
+            Debug.Log($"{demoName} initializing is completed.");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
+        finally
+        {
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.Refresh();
+        }
+    }
+    #endregion
+
+    private static bool? _innerIsTmpImported = null;
+
+    private static bool IsTmpImported => _innerIsTmpImported ??= GetIsTmpImported();
+
+    #region Import Event
+    private class DemoKitAutoInitializerImportWatcher : AssetPostprocessor
+    {
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            _innerIsTmpImported = null;
+
+            foreach (var aPath in importedAssets)
+            {
+                var guid = AssetDatabase.AssetPathToGUID(aPath);
+                if (guid == importCheckGuid)
+                {
+                    OnInternalPackageImportCompleted();
+                    return;
+                }
+            }
+        }
+    }
+    #endregion
+
+
+    #region GUI layout
+    private const float topBottomPadding = 16f;
+    private const float sidePadding = 16f;
+
+
+    private static readonly Lazy<GUIStyle> lazyRichTextStyle = new(() => new(EditorStyles.label)
+    {
+        richText = true,
+        wordWrap = true
+    });
+
+    private static readonly Lazy<GUIStyle> lazyLargeHeadingStyle = new(() => new(lazyRichTextStyle.Value)
+    {
+        fontSize = 18,
+        fontStyle = FontStyle.Bold,
+    });
+
+    private static readonly Lazy<GUIStyle> lazyMediumHeadingStyle = new(() => new(lazyLargeHeadingStyle.Value)
+    {
+        fontSize = 16
+    });
+
+    private static readonly Lazy<GUIStyle> lazySmallHeadingStyle = new(() => new(lazyLargeHeadingStyle.Value)
+    {
+        fontSize = 14
+    });
+
+    private static readonly Lazy<string> lazyWindowMenuNavigation = new(() =>
+    {
+        var wPaths = WindowMenuPath.Split("/")
+            .Select(p => $"[{p}]")
+            .ToArray();
+
+        var sb = new StringBuilder();
+        sb.AppendJoin(" > ", wPaths);
+        return sb.ToString();
+    });
+
+
+    private Vector2 _scrollPos;
+
+    private static void GUIHorizontal(UnityAction<EditorGUILayout.HorizontalScope> layout)
+    {
+        using var hScope = new EditorGUILayout.HorizontalScope();
+        layout?.Invoke(hScope);
+    }
+
+    void OnGUI()
+    {
+        _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
+
+        GUILayout.Space(topBottomPadding);
+
+        GUIHorizontal(hScope =>
+        {
+            GUILayout.Space(sidePadding);
+            EditorGUILayout.BeginVertical();
+            ContentLayout();
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(sidePadding);
+        });
+
+        GUILayout.Space(topBottomPadding);
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private static void GUILabel(string text) => EditorGUILayout.LabelField(text, lazyRichTextStyle.Value);
+
+    private static void GUILargeHeading(string text) => EditorGUILayout.LabelField(text, lazyLargeHeadingStyle.Value);
+    private static void GUIMediumHeading(string text) => EditorGUILayout.LabelField(text, lazyMediumHeadingStyle.Value);
+    private static void GUISmallHeading(string text) => EditorGUILayout.LabelField(text, lazySmallHeadingStyle.Value);
+    
+
+    private static void GUISpace(float size) => EditorGUILayout.Space(size);
+    private static void GUISmallSpace() => GUISpace(6);
+    private static void GUIMediumSpace() => GUISpace(10);
+    private static void GUILargeSpace() => GUISpace(16);
+
+    private const string TMPImportMenuPath = "Window/TextMeshPro/Import TMP Essential Resources";
+    private const string TMPCheckGuid = "8f586378b4e144a9851e7b34d9b748ee";
+    private const string TMPFolderPath = "Assets/TextMesh Pro";
+
+    private static bool GetIsTmpImported()
+    {
+        var sdfPath = AssetDatabase.GUIDToAssetPath(TMPCheckGuid);
+        if (!string.IsNullOrEmpty(sdfPath))
+        {
+            if (AssetDatabase.GetMainAssetTypeAtPath(sdfPath) != null)
+            {
+                return true;
+            }
+        }
+
+        var guids = AssetDatabase.FindAssets("t:TMP_Settings");
+        return guids.Length > 0;
+    }
+
+    private static readonly Lazy<GUIStyle> lazyLinkStyle = new(() =>
+    {
+        var style = new GUIStyle(EditorStyles.label);
+        style.normal.textColor = new Color(0.3f, 0.5f, 1f);
+        style.hover.textColor = Color.cyan;
+        style.fontStyle = FontStyle.Normal;
+        style.wordWrap = true;
+        return style;
+    });
+
+    private static void GUILink(string url, string label = null)
+    {
+        label ??=  url;
+
+        var rect = GUILayoutUtility.GetRect(new GUIContent(label), lazyLinkStyle.Value);
+
+        EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+
+        if (GUI.Button(rect, label, lazyLinkStyle.Value))
+        {
+            Application.OpenURL(url);
+        }
+    }
+
+    private static readonly Color SeparatorColor = new(1f, 1f, 1f, 0.15f);
+    private static void GUISeparator(float alpha = 1f)
+    {
+        EditorGUILayout.Space(4);
+
+        var rect = EditorGUILayout.GetControlRect(false, 1);
+        var color = SeparatorColor;
+        color.a *= alpha;
+        EditorGUI.DrawRect(rect, color);
+
+        EditorGUILayout.Space(4);
+    }
+
+    private void ContentLayout()
+    {
+        GUILargeHeading($"{WindowName}");
+
+        GUIMediumSpace();
+
+        GUILabel($"This window will guide your through the initialization process for <b>{demoName}</b>.");
+        GUILabel($"Press the buttton below and start initializing <b>{demoName}</b>.");
+
+        GUISmallSpace();
+
+        EditorGUILayout.HelpBox(
+            $"Note: To reopen this window again before initialization, select {lazyWindowMenuNavigation.Value}.",
+            MessageType.Info
+        );
+
+        GUISmallSpace();
+
+        GUISeparator();
+
+        GUILabel("<b>[References]</b>");
+        GUILabel($"This demo was generated by <b>{DemoKitName}</b>.");
+        GUIHorizontal(_ =>
+        {
+            GUILabel("Website: ");
+            GUILink(CTWebsiteUrl);
+            GUILayout.FlexibleSpace();
+        });
+        GUIHorizontal(_ =>
+        {
+            GUILabel("GitHub: ");
+            GUILink(CTGitHubUrl);
+            GUILayout.FlexibleSpace();
+        });
+        GUIHorizontal(_ =>
+        {
+            GUILabel($"Asset Store: ");
+            GUILink(CTAssetStoreUrl);
+            GUILayout.FlexibleSpace();
+        });
+
+        GUISeparator();
+
+        GUISmallSpace();
+
+        GUIMediumHeading($"Initialize {demoName}");
+
+        var isTmpImported = IsTmpImported;
+
+        var curGuiEnabled = GUI.enabled;
+
+        GUI.enabled = !isTmpImported;
+
+        GUISmallSpace();
+        GUILabel($"<b>[NOTICE] TextMeshPro required.</b>\nPlease import 'TMP Essential Resources' to display the demo UI correctly.");
+        if (GUILayout.Button($"Import TMP Essential Resources"))
+        {
+            EditorApplication.ExecuteMenuItem(TMPImportMenuPath);
+        }
+
+        GUI.enabled = curGuiEnabled;
+
+        if (isTmpImported)
+        {
+            GUILabel($"* TMP Essential Resources are already imported.");
+        }
+
+        GUIMediumSpace();
+
+        if (GUILayout.Button($"Initialize {demoName}"))
+        {
+            InitializeProcess();
+        }
+
+        GUISmallSpace();
+
+        EditorGUILayout.HelpBox(
+            $@"This initialization process will perform the following:
+    1: Import required assets of {DemoKitName}.
+    2: Extract {demoName} assets to the destination folder.
+    3: Remove temporary files used for initlaization.",
+            MessageType.Info
+        );
+
+        EditorGUILayout.HelpBox(
+            $@"Upon completion, the following files will be deleted:
+    - {zipArchiveFileName}
+    - {unityPackageFileName}
+    - {selfFileName}
+Accordingly, this window and its menu item will be removed from the Editor.",
+            MessageType.Warning
+        );
+
+    }
+    #endregion
+}
+#endif

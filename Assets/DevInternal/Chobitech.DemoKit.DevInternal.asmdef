@@ -1,0 +1,18 @@
+{
+    "name": "Chobitech.DemoKit.DevInternal",
+    "rootNamespace": "Chobitech.DemoKit.DevInternal",
+    "references": [
+        "GUID:beb537e106bba50418d315c4c2fdaa0b",
+        "GUID:7a50ac1ecd56af744a61f1993d9a8c5e",
+        "GUID:51cab77b721d54d4bb8819c5995db3a7"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
